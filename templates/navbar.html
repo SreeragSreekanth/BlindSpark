@@ -1,0 +1,49 @@
+<nav class="navbar">
+    <div class="nav-container">
+      <a href="{% url 'home' %}" class="brand">BlindSpark 💫</a>
+  
+      <ul class="nav-links">
+        {% if user.is_authenticated %}
+          <li><a href="{% url 'users:profile' %}">Profile</a></li>
+          <li><a href="{% url 'matches:discover' %}">Discover</a></li>
+          <li><a href="#">Chat</a></li>
+          <li><a href="{% url 'users:logout' %}">Logout</a></li>
+        {% else %}
+          <li><a href="{% url 'users:register' %}">Sign Up</a></li>
+          <li><a href="{% url 'users:login' %}">Login</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+  
+  <style>
+    .navbar {
+      background: #1e1e2f;
+      padding: 10px 20px;
+    }
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      color: #ffb300;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 1.3rem;
+    }
+    .nav-links {
+      list-style: none;
+      display: flex;
+      gap: 15px;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .nav-links a:hover {
+      color: #ffb300;
+    }
+  </style>
+  

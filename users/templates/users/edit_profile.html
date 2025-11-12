@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="profile-edit-container">
+  <h2 class="text-center mb-4">Edit Profile</h2>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-success">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="POST" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <!-- Regular Fields -->
+    {{ form.dob|as_crispy_field }}
+    {{ form.gender|as_crispy_field }}
+    {{ form.bio|as_crispy_field }}
+    {{ form.city|as_crispy_field }}
+    {{ form.profile_photo|as_crispy_field }}
+
+    <!-- INTERESTS: Autocomplete + Tags -->
+    <div class="mb-4 position-relative">
+      <label class="form-label fw-bold">Interests</label>
+      <input 
+        type="text" 
+        id="interest-input" 
+        class="form-control" 
+        placeholder="Type to search (e.g., Cricket, Yoga)" 
+        autocomplete="off"
+      >
+      <div id="suggestions" class="dropdown-menu w-100" style="display:none;"></div>
+      <div id="selected-interests" class="mt-2 d-flex flex-wrap gap-2"></div>
+      <small class="text-muted">Press Enter or click to add</small>
+    </div>
+
+    <!-- Hidden Fields -->
+    {{ form.latitude }}
+    {{ form.longitude }}
+
+    <!-- Save Button -->
+    <button type="submit" class="btn btn-dark w-100 mb-3">
+      Save Changes
+    </button>
+  </form>
+
+  <!-- Back Button -->
+  <a href="{% url 'users:profile' %}" class="btn btn-outline-secondary w-100 d-block text-center">
+    Back to Profile
+  </a>
+</div>
+
+<style>
+.profile-edit-container {
+  max-width: 600px;
+  margin: 60px auto;
+  background: #fff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  font-family: 'Poppins', sans-serif;
+}
+.interest-tag {
+  background: #1e1e2f;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.interest-tag .remove {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  margin-top: -1px;
+  background: white;
+  z-index: 1000;
+}
+.dropdown-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.dropdown-item:hover {
+  background: #f8f9fa;
+}
+#photo-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 3px solid #eee;
+  margin-top: 8px;
+  display: block;
+}
+</style>
+
+<script>
+// === DATA FROM DJANGO ===
+const interestsData = {{ interests_data|safe }};  // [[1, "Cricket"], [2, "Yoga"]]
+const selectedIds = new Set({{ selected_ids|safe }});  // [1, 3]
+
+// Map ID → Name
+const idToName = Object.fromEntries(interestsData.map(([id, name]) => [id, name]));
+
+// DOM Elements
+const input = document.getElementById('interest-input');
+const suggestions = document.getElementById('suggestions');
+const selectedContainer = document.getElementById('selected-interests');
+
+// === Render Tags ===
+function renderTags() {
+  selectedContainer.innerHTML = '';
+  selectedIds.forEach(id => {
+    const name = idToName[id];
+    if (!name) return;
+    const tag = document.createElement('span');
+    tag.className = 'interest-tag';
+    tag.innerHTML = `${name} <span class="remove">×</span>`;
+    tag.querySelector('.remove').onclick = () => {
+      selectedIds.delete(id);
+      renderTags();
+    };
+    selectedContainer.appendChild(tag);
+  });
+}
+
+// === Show Suggestions ===
+function showSuggestions(matches) {
+  suggestions.innerHTML = '';
+  if (matches.length === 0) {
+    suggestions.style.display = 'none';
+    return;
+  }
+  matches.forEach(([id, name]) => {
+    const item = document.createElement('div');
+    item.className = 'dropdown-item';
+    item.textContent = name;
+    item.onclick = () => {
+      if (!selectedIds.has(id)) {
+        selectedIds.add(id);
+        renderTags();
+      }
+      input.value = '';
+      suggestions.style.display = 'none';
+    };
+    suggestions.appendChild(item);
+  });
+  suggestions.style.display = 'block';
+}
+
+// === Input: Filter & Show ===
+input.addEventListener('input', () => {
+  const val = input.value.trim().toLowerCase();
+  if (!val) {
+    suggestions.style.display = 'none';
+    return;
+  }
+  const matches = interestsData.filter(([id, name]) => 
+    name.toLowerCase().includes(val) && !selectedIds.has(id)
+  ).slice(0, 8);
+  showSuggestions(matches);
+});
+
+// === Enter Key ===
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const val = input.value.trim().toLowerCase();
+    const match = interestsData.find(([id, name]) => 
+      name.toLowerCase() === val && !selectedIds.has(id)
+    );
+    if (match) {
+      selectedIds.add(match[0]);
+      renderTags();
+      input.value = '';
+      suggestions.style.display = 'none';
+    }
+  }
+});
+
+// === Click Outside to Hide ===
+document.addEventListener('click', e => {
+  if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+    suggestions.style.display = 'none';
+  }
+});
+
+// === Submit: Send IDs ===
+document.querySelector('form').addEventListener('submit', () => {
+  document.querySelectorAll('input[name="interests"]').forEach(el => el.remove());
+  selectedIds.forEach(id => {
+    const inp = document.createElement('input');
+    inp.type = 'hidden';
+    inp.name = 'interests';
+    inp.value = id;
+    document.querySelector('form').appendChild(inp);
+  });
+});
+
+// === GEOLOCATION ===
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    const lat = document.querySelector('input[name="latitude"]');
+    const lon = document.querySelector('input[name="longitude"]');
+    if (lat) lat.value = pos.coords.latitude;
+    if (lon) lon.value = pos.coords.longitude;
+  });
+}
+
+// === PHOTO PREVIEW ===
+document.querySelector('#id_profile_photo')?.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    let img = document.querySelector('#photo-preview');
+    if (!img) {
+      img = new Image();
+      img.id = 'photo-preview';
+      e.target.parentNode.appendChild(img);
+    }
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+// === INITIAL RENDER ===
+renderTags();
+</script>
+{% endblock %}

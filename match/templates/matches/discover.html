@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-4" style="max-width:1000px;">
+  <h2 class="text-center mb-4">Discover Matches</h2>
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-warning">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+  <div id="match-grid" class="row g-3">
+    {% include 'matches/_cards.html' %}
+  </div>
+
+  <div id="loader" class="text-center my-4" style="display:none;">
+    <div class="spinner-border text-dark"></div>
+  </div>
+</div>
+
+<script>
+let page = 2;  // first page is already loaded
+let loading = false;
+let hasNext = {{ has_next|yesno:"true,false" }};
+
+function loadNextPage() {
+  if (loading || !hasNext) return;
+  loading = true;
+  document.getElementById('loader').style.display = 'block';
+
+  const url = new URL(window.location);
+  url.searchParams.set('page', page);
+
+  fetch(url, { headers: {'X-Requested-With': 'XMLHttpRequest'} })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('match-grid').insertAdjacentHTML('beforeend', data.html);
+      hasNext = data.has_next;
+      page++;
+    })
+    .finally(() => {
+      loading = false;
+      document.getElementById('loader').style.display = 'none';
+    });
+}
+
+window.addEventListener('scroll', () => {
+  if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 300) {
+    loadNextPage();
+  }
+});
+</script>
+{% endblock %}
