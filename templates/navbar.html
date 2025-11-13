@@ -6,7 +6,12 @@
         {% if user.is_authenticated %}
           <li><a href="{% url 'users:profile' %}">Profile</a></li>
           <li><a href="{% url 'matches:discover' %}">Discover</a></li>
-          <li><a href="#">Chat</a></li>
+          <li class="position-relative">
+            <a href="{% url 'chat:chat_list' %}">Chat</a>
+            {% if total_unread > 0 %}
+              <span class="badge-unread">{{ total_unread }}</span>
+            {% endif %}
+          </li>
           <li><a href="{% url 'users:logout' %}">Logout</a></li>
         {% else %}
           <li><a href="{% url 'users:register' %}">Sign Up</a></li>
@@ -45,5 +50,22 @@
     .nav-links a:hover {
       color: #ffb300;
     }
+    .badge-unread {
+    position: absolute;
+    top: -8px;
+    right: -12px;
+    background: #ff3b30;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
   </style>
   

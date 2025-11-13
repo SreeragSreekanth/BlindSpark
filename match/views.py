@@ -12,6 +12,8 @@ from datetime import date
 from users.models import User
 from .models import Match, DiscoveryLog, Like
 from .utils import calculate_match_score, haversine_km
+from chat.models import ChatRoom
+
 
 
 @login_required
@@ -141,6 +143,8 @@ def like_user(request, user_id):
             )
             match_obj.is_active = True
             match_obj.save()
+            ChatRoom.objects.get_or_create(match=match_obj)
+
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'mutual': True, 'message': f"Mutual like with {target.username}!"})
@@ -157,3 +161,5 @@ def like_user(request, user_id):
             messages.warning(request, "Already liked")
 
     return redirect('matches:discover') if not request.headers.get('x-requested-with') else JsonResponse({'success': True})
+
+

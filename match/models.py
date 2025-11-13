@@ -11,6 +11,7 @@ class Match(models.Model):
     compatibility_score = models.FloatField(default=0.0)
     matched_on = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    is_friend = models.BooleanField(default=False)  # ← NEW
 
     class Meta:
         unique_together = ('user_a', 'user_b')
