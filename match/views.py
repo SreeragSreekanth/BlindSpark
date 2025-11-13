@@ -52,17 +52,24 @@ def discover_matches(request):
         interest_score = (shared / max(len(user_interests), 1)) * 70
 
         # Location score (0-30)
+        distance = None
         loc_score = 15.0
         if user_lat and user_lon and p.latitude and p.longitude:
-            dist = haversine_km(user_lat, user_lon, p.latitude, p.longitude)
-            loc_score = max(0, 30 - dist * 0.3)
+            distance = round(haversine_km(user_lat, user_lon, p.latitude, p.longitude), 1)
+            loc_score = max(0, 30 - distance * 0.3)
+            print(f"Distance to {p.username}: {distance} km, loc_score: {loc_score}")
 
         total_score = interest_score + loc_score
         if total_score >= 10:  # only include relevant matches
-            results.append({'user': p, 'score': round(total_score, 2)})
+            results.append({
+                'user': p,
+                'score': round(total_score, 2),
+                'distance': distance
+            })
 
     # Sort by score DESC, then id ASC to avoid duplicates across pages
     results.sort(key=lambda x: (-x['score'], x['user'].id))
+
 
     # Pagination
     paginator = Paginator(results, 9)  # 9 per page
@@ -75,6 +82,7 @@ def discover_matches(request):
         return JsonResponse({'html': cards_html, 'has_next': page_obj.has_next()})
 
     return render(request, 'matches/discover.html', {'page_obj': page_obj,'has_next': page_obj.has_next()})
+
 
 @login_required
 def view_profile(request, user_id):

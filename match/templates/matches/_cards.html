@@ -11,6 +11,12 @@
 
     <div class="mt-3 text-center">
       <h5 class="mb-1">{{ r.user.username }}</h5>
+      {% if r.distance is not None %}
+        <p class="mb-1 text-muted">{{ r.distance }} km away</p>
+      {% else %}
+        <p class="mb-1 text-muted">Location not set</p>
+      {% endif %}
+
       <p class="mb-1 text-muted">{{ r.user.city|default:"City not set" }}</p>
       <p class="fw-semibold mb-1">Match: {{ r.score }}%</p>
     </div>
