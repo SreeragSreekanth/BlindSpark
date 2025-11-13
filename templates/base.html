@@ -31,4 +31,12 @@
   </main>
   {% include 'footer.html' %}
 </body>
+<script>
+  // Update last_seen every 30 seconds when page is visible
+  setInterval(() => {
+    if (!document.hidden) {
+      fetch("{% url 'users:update_last_seen' %}", { method: 'POST' });
+    }
+  }, 30000);
+</script>
 </html>

@@ -10,7 +10,7 @@ from datetime import date
 
 from users.models import User
 from match.models import Match  # <-- import Match from your match app
-from .models import ChatRoom, Message  # <-- import Message as well
+from .models import ChatRoom, Message,RevealRequest  # <-- import Message as well
 from django.db import models
 from django.views.decorators.http import require_POST
 
@@ -20,27 +20,43 @@ from django.views.decorators.http import require_POST
 @login_required
 def chatroom(request, match_id):
     match = get_object_or_404(Match, id=match_id, is_active=True)
+
     if request.user not in (match.user_a, match.user_b):
         return HttpResponseForbidden()
 
     chatroom, _ = ChatRoom.objects.get_or_create(match=match)
     other_user = match.user_b if request.user == match.user_a else match.user_a
 
-    # MARK ALL MESSAGES FROM OTHER USER AS READ
+    # Mark messages as read
     Message.objects.filter(
         chat=chatroom,
         sender=other_user,
         is_read=False
     ).update(is_read=True)
 
+    reveal_request = RevealRequest.objects.filter(
+        match=match,
+        requester=other_user
+    ).exists()
+
+    reveal_requested = RevealRequest.objects.filter(
+        match=match,
+        requester=request.user
+    ).exists()
+
+    # Photo visibility
     can_see_photo = match.is_friend
+    # ------------------------------------------
 
     return render(request, 'chat/chatroom.html', {
         'chatroom': chatroom,
         'match': match,
         'other_user': other_user,
-        'can_see_photo': can_see_photo
+        'can_see_photo': can_see_photo,
+        'reveal_request': reveal_request,     # They requested
+        'reveal_requested': reveal_requested,
     })
+
 
 
 @login_required
@@ -119,3 +135,35 @@ def delete_message(request, message_id):
     msg.is_deleted = True
     msg.save(update_fields=['is_deleted'])
     return JsonResponse({'success': True})
+
+
+
+@login_required
+def request_reveal(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    if request.user not in (match.user_a, match.user_b):
+        return HttpResponseForbidden()
+
+    if match.is_friend:
+        return JsonResponse({'already': True})
+
+    # Create request
+    RevealRequest.objects.get_or_create(match=match, requester=request.user)
+    return JsonResponse({'requested': True})
+
+
+@login_required
+def accept_reveal(request, match_id):
+    match = get_object_or_404(Match, id=match_id)
+    if request.user not in (match.user_a, match.user_b):
+        return HttpResponseForbidden()
+
+    other_user = match.user_b if request.user == match.user_a else match.user_a
+
+    # Accept: mark friend + delete request
+    if not match.is_friend:
+        match.is_friend = True
+        match.save(update_fields=['is_friend'])
+
+    RevealRequest.objects.filter(match=match, requester=other_user).delete()
+    return JsonResponse({'accepted': True, 'unblurred': True})

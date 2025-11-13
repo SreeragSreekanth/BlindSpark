@@ -4,15 +4,42 @@
   <div class="card shadow-sm">
     <!-- Header -->
     <div class="card-header d-flex align-items-center bg-dark text-white">
+
       <a href="{% url 'chat:chat_list' %}" class="text-white me-3">Back</a>
-      <img src="{{ other_user.profile_photo.url|default:'/static/img/avatar.png' }}" 
-           class="rounded-circle me-2 {% if not can_see_photo %}blur-photo{% endif %}"
+    
+      <!-- PROFILE PHOTO WITH ID -->
+      <img id="profile-photo"
+           src="{{ other_user.profile_photo.url|default:'/static/img/avatar.png' }}"
+           class="rounded-circle me-2 {% if not match.is_friend %}blur-photo{% endif %}"
            style="width:40px;height:40px;object-fit:cover;">
-      <strong>{{ other_user.username }}</strong>
-      {% if other_user.is_online %}
-        <span class="online-dot ms-2"></span>
-      {% endif %}
+    
+      <a href="{% url 'matches:view_profile' other_user.id %}" 
+         class="text-white fw-bold" 
+         style="text-decoration:none;">
+         {{ other_user.username }}
+      </a>
+    
+      <!-- {% if other_user.is_online %}
+          <span class="online-dot ms-2"></span>
+      {% endif %} -->
+    
+      <!-- REVEAL BUTTONS — ONLY THIS PART CHANGED -->
+      <div id="reveal-controls" class="ms-auto">
+        {% if not match.is_friend %}
+          {% if reveal_requested %}
+            <button class="btn btn-warning btn-sm" disabled>Requested</button>
+          {% elif reveal_request %}
+            <button id="accept-btn" class="btn btn-success btn-sm">Accept</button>
+          {% else %}
+            <button id="request-btn" class="btn btn-primary btn-sm">Request Reveal</button>
+          {% endif %}
+        {% else %}
+          <span class="text-success small">Unblurred</span>
+        {% endif %}
+      </div>
+    
     </div>
+    
 
     <!-- Messages -->
     <div id="chat-box" class="card-body p-0" style="height:60vh; overflow-y:auto;">
@@ -40,7 +67,7 @@
 </div>
 
 <style>
-  .blur-photo { filter: blur(8px); }
+  .blur-photo { filter: blur(8px); transition: filter 0.3s ease; }
   .online-dot { display: inline-block; width: 8px; height: 8px; background: #4cd964; border-radius: 50%; box-shadow: 0 0 4px #4cd964; }
   #delete-popup { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 </style>
@@ -172,6 +199,33 @@
       typing.style.display = 'none';
     }
   });
-  </script>
+
+  // ——— REVEAL BUTTONS — ONLY THIS PART ADDED ———
+  document.getElementById('request-btn')?.addEventListener('click', () => {
+    fetch("{% url 'chat:request_reveal' match.id %}", {
+      method: 'POST',
+      headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    }).then(r => r.json()).then(d => {
+      if (d.requested) {
+        document.getElementById('reveal-controls').innerHTML = 
+          '<button class="btn btn-warning btn-sm" disabled>Requested</button>';
+      }
+    });
+  });
+
+  document.getElementById('accept-btn')?.addEventListener('click', () => {
+    fetch("{% url 'chat:accept_reveal' match.id %}", {
+      method: 'POST',
+      headers: {'X-CSRFToken': '{{ csrf_token }}'}
+    }).then(r => r.json()).then(d => {
+      if (d.accepted) {
+        document.getElementById('profile-photo').classList.remove('blur-photo');
+        document.getElementById('reveal-controls').innerHTML = 
+          '<span class="text-success small">Unblurred</span>';
+      }
+    });
+  });
+  // ——— END REVEAL ———
+</script>
   
 {% endblock %}

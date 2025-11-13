@@ -5,6 +5,8 @@ from .forms import UserRegisterForm, UserProfileForm,UserLoginForm
 from .models import User,Interest
 from django.contrib.auth.decorators import login_required
 import json
+from django.http import JsonResponse
+from django.utils import timezone
 
 def register_view(request):
     if request.method == 'POST':
@@ -77,3 +79,10 @@ def logout_view(request):
     logout(request)
     messages.info(request, "You’ve been logged out successfully.")
     return redirect('home')
+
+
+@login_required
+def update_last_seen(request):
+    request.user.last_seen = timezone.now()
+    request.user.save(update_fields=['last_seen'])
+    return JsonResponse({'status': 'updated'})

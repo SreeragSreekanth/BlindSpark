@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from match.models import Match
 
 
 User = settings.AUTH_USER_MODEL
@@ -27,3 +28,12 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender} → {self.text[:25]}"
+
+
+class RevealRequest(models.Model):
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('match', 'requester')
