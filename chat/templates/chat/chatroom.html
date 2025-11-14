@@ -1,29 +1,30 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
-<div class="container py-3" style="max-width:650px;">
+
+<link rel="stylesheet" href="{% static 'css/chatroom.css' %}">
+<link rel="stylesheet" href="{% static 'css/chat_messages.css' %}">
+
+
+<div class="container py-3 chat-wrapper">
   <div class="card shadow-sm">
+
     <!-- Header -->
     <div class="card-header d-flex align-items-center bg-dark text-white">
 
       <a href="{% url 'chat:chat_list' %}" class="text-white me-3">Back</a>
-    
-      <!-- PROFILE PHOTO WITH ID -->
+
       <img id="profile-photo"
            src="{{ other_user.profile_photo.url|default:'/static/img/avatar.png' }}"
            class="rounded-circle me-2 {% if not match.is_friend %}blur-photo{% endif %}"
            style="width:40px;height:40px;object-fit:cover;">
-    
+
       <a href="{% url 'matches:view_profile' other_user.id %}" 
-         class="text-white fw-bold" 
+         class="text-white fw-bold"
          style="text-decoration:none;">
          {{ other_user.username }}
       </a>
-    
-      <!-- {% if other_user.is_online %}
-          <span class="online-dot ms-2"></span>
-      {% endif %} -->
-    
-      <!-- REVEAL BUTTONS -->
+
       <div id="reveal-controls" class="ms-auto">
         {% if not match.is_friend %}
           {% if reveal_requested %}
@@ -37,12 +38,11 @@
           <span class="text-success small">Unblurred</span>
         {% endif %}
       </div>
-    
+
     </div>
-    
 
     <!-- Messages -->
-    <div id="chat-box" class="card-body p-0" style="height:60vh; overflow-y:auto;">
+    <div id="chat-box" class="card-body p-0 chat-box">
       {% include 'chat/_messages.html' %}
     </div>
 
@@ -56,178 +56,25 @@
           <button class="btn btn-dark" type="submit">Send</button>
         </div>
       </form>
-      <!-- <div id="typing" class="text-success small mt-2" style="display:none;">Typing...</div> -->
     </div>
   </div>
 
-  <!-- DELETE POPUP -->
-  <div id="delete-popup" class="shadow-sm" style="display:none; position:absolute; background:white; border-radius:8px; padding:8px 0; z-index:100;">
-    <button class="btn btn-sm w-100 text-start px-3 text-danger" onclick="deleteMessage()">Delete Message</button>
+  <div id="delete-popup" class="delete-popup">
+    <button class="btn btn-sm w-100 text-start px-3 text-danger"
+            onclick="deleteMessage()">
+      Delete Message
+    </button>
   </div>
 </div>
 
-<style>
-  .blur-photo { filter: blur(8px); transition: filter 0.3s ease; }
-  .online-dot { display: inline-block; width: 8px; height: 8px; background: #4cd964; border-radius: 50%; box-shadow: 0 0 4px #4cd964; }
-  #delete-popup { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-  
-  /* Date Separator Styles */
-  .date-separator {
-    text-align: center;
-    margin: 15px 0;
-    position: relative;
-  }
-  .date-separator span {
-    background: #f8f9fa;
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-  }
-</style>
-
 <script>
-  const chatBox = document.getElementById('chat-box');
-  const form = document.getElementById('chat-form');
-  const input = document.getElementById('msg-input');
-  // const typing = document.getElementById('typing');
-  const popup = document.getElementById('delete-popup');
-  
-  let currentMsgId = null;
-  let pressTimer;
-  let lastMessageCount = 0; // track number of messages
-  
-  // Scroll to bottom
-  function scrollToBottom() {
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
-  
-  // Scroll only if near bottom
-  function scrollToBottomIfNearBottom() {
-    const threshold = 50; // px from bottom
-    const isNearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < threshold;
-    if (isNearBottom) scrollToBottom();
-  }
-  
-  // Fetch messages
-  function fetchMessages() {
-    fetch("{% url 'chat:fetch_messages' chatroom.id %}")
-      .then(res => res.json())
-      .then(data => {
-        const oldMessageCount = lastMessageCount;
-        chatBox.innerHTML = data.html;
-        attachDeleteListeners();
-        lastMessageCount = data.messages_count; // return this from your view
-  
-        if (oldMessageCount === 0) {
-          // First load → scroll to latest
-          scrollToBottom();
-        } else if (lastMessageCount > oldMessageCount) {
-          // New messages arrived - ALWAYS SCROLL TO BOTTOM
-          scrollToBottom();
-        }
-      });
-  }
-  
-  // Delete message
-  function deleteMessage() {
-    if (!currentMsgId || !confirm('Delete this message?')) return;
-  
-    fetch(`/chat/message/${currentMsgId}/delete/`, {
-      method: 'POST',
-      headers: {'X-CSRFToken': '{{ csrf_token }}'}
-    }).then(() => {
-      fetchMessages();
-      popup.style.display = 'none';
-      currentMsgId = null;
-    });
-  }
-  
-  // Right click for delete
-  document.addEventListener('contextmenu', function(e) {
-    const bubble = e.target.closest('.msg-bubble.me');
-    if (bubble) {
-      e.preventDefault();
-      currentMsgId = bubble.dataset.msgId;
-      popup.style.display = 'block';
-      popup.style.left = e.pageX + 'px';
-      popup.style.top = e.pageY + 'px';
-    }
-  });
-  
-  // Click outside popup
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#delete-popup')) {
-      popup.style.display = 'none';
-    }
-  });
-  
-  // Long press (mobile)
-  function attachDeleteListeners() {
-    document.querySelectorAll('.msg-bubble.me').forEach(bubble => {
-      const start = () => {
-        pressTimer = setTimeout(() => {
-          currentMsgId = bubble.dataset.msgId;
-          deleteMessage();
-        }, 800);
-      };
-      const cancel = () => clearTimeout(pressTimer);
-  
-      bubble.ontouchstart = start;
-      bubble.ontouchend = cancel;
-      bubble.ontouchmove = cancel;
-    });
-  }
-  
-  // Initial load
-  fetchMessages();
-  setInterval(fetchMessages, 2000);
-  
-  // Send message
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-  
-    const formData = new FormData();
-    formData.append('text', text);
-    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-  
-    fetch("{% url 'chat:send_message' chatroom.id %}", {
-      method: 'POST',
-      body: formData
-    }).then(() => {
-      input.value = '';
-      fetchMessages();
-    });
-  });
-
-  // ——— REVEAL BUTTONS ———
-  document.getElementById('request-btn')?.addEventListener('click', () => {
-    fetch("{% url 'chat:request_reveal' match.id %}", {
-      method: 'POST',
-      headers: {'X-CSRFToken': '{{ csrf_token }}'}
-    }).then(r => r.json()).then(d => {
-      if (d.requested) {
-        document.getElementById('reveal-controls').innerHTML = 
-          '<button class="btn btn-warning btn-sm" disabled>Requested</button>';
-      }
-    });
-  });
-
-  document.getElementById('accept-btn')?.addEventListener('click', () => {
-    fetch("{% url 'chat:accept_reveal' match.id %}", {
-      method: 'POST',
-      headers: {'X-CSRFToken': '{{ csrf_token }}'}
-    }).then(r => r.json()).then(d => {
-      if (d.accepted) {
-        document.getElementById('profile-photo').classList.remove('blur-photo');
-        document.getElementById('reveal-controls').innerHTML = 
-          '<span class="text-success small">Unblurred</span>';
-      }
-    });
-  });
+  const CHAT_FETCH_URL = "{% url 'chat:fetch_messages' chatroom.id %}";
+  const CHAT_SEND_URL = "{% url 'chat:send_message' chatroom.id %}";
+  const REQUEST_REVEAL_URL = "{% url 'chat:request_reveal' match.id %}";
+  const ACCEPT_REVEAL_URL = "{% url 'chat:accept_reveal' match.id %}";
+  const CSRF_TOKEN = "{{ csrf_token }}";
 </script>
-  
+
+<script src="{% static 'js/chatroom.js' %}"></script>
+
 {% endblock %}

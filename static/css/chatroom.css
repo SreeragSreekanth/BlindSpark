@@ -1,0 +1,48 @@
+.chat-wrapper {
+    max-width: 650px;
+  }
+  
+  .chat-box {
+    height: 60vh;
+    overflow-y: auto;
+  }
+  
+  .blur-photo {
+    filter: blur(8px);
+    transition: filter 0.3s ease;
+  }
+  
+  .delete-popup {
+    display: none;
+    position: absolute;
+    background: white;
+    border-radius: 8px;
+    padding: 8px 0;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  .online-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #4cd964;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #4cd964;
+  }
+  
+  /* Date separator */
+  .date-separator {
+    text-align: center;
+    margin: 15px 0;
+  }
+  
+  .date-separator span {
+    background: #f8f9fa;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+  }
+  

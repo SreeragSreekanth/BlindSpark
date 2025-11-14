@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
-<div class="container py-4" style="max-width:650px;">
+
+<link rel="stylesheet" href="{% static 'css/chat_list.css' %}">
+<script src="{% static 'js/chat_list.js' %}" defer></script>
+
+<div class="container py-4 chat-list-wrapper">
   <h3 class="mb-4 text-center">Chats</h3>
 
   <!-- SEARCH -->
@@ -12,7 +17,9 @@
     <div class="list-group">
       {% for c in chatrooms %}
         <a href="{% url 'chat:chatroom' c.room.match.id %}" 
-           class="list-group-item list-group-item-action p-3 chat-item">
+           class="list-group-item list-group-item-action p-3 chat-item"
+           data-name="{{ c.other.username|lower }}">
+
           <div class="d-flex w-100 align-items-center">
             <!-- Avatar -->
             <div class="me-3 position-relative">
@@ -34,16 +41,13 @@
             <!-- Info -->
             <div class="flex-grow-1">
               <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fw-bold chat-name">
-                  {{ c.other.username }}
-                  <!-- {% if c.other.is_online %}
-                    <span class="online-dot"></span>
-                  {% endif %} -->
-                </h6>
+                <h6 class="mb-0 fw-bold chat-name">{{ c.other.username }}</h6>
+
                 {% if c.last_msg %}
                   <small class="text-muted">{{ c.last_msg.timestamp|date:"H:i" }}</small>
                 {% endif %}
               </div>
+
               <p class="mb-0 text-muted small">
                 {% if c.last_msg %}
                   {% if c.last_msg.sender == user %}You: {% endif %}
@@ -59,9 +63,11 @@
               <span class="badge bg-danger rounded-pill ms-2">{{ c.unread }}</span>
             {% endif %}
           </div>
+
         </a>
       {% endfor %}
     </div>
+
   {% else %}
     <div class="text-center py-5">
       <p class="text-muted">No chats yet. Start matching!</p>
@@ -69,49 +75,5 @@
     </div>
   {% endif %}
 </div>
-
-<style>
-  .search-container { max-width: 100%; }
-  #search-input { border-radius: 20px; padding: 10px 16px; font-size: 0.9rem; }
-  .online-dot { display: inline-block; width: 8px; height: 8px; background: #4cd964; border-radius: 50%; margin-left: 6px; box-shadow: 0 0 4px #4cd964; }
-  .blur-photo { filter: blur(6px); }
-  .blur-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); border-radius: 50%; pointer-events: none; }
-</style>
-
-<script>
-  // --- Force reload if user navigates back from a chatroom ---
-  window.addEventListener("pageshow", function (event) {
-    const navType = performance.getEntriesByType("navigation")[0]?.type;
-    if (event.persisted || navType === "back_forward") {
-      window.location.reload();
-    }
-  });
-
-  // --- Auto-refresh every few seconds to get new chats/unreads ---
-  setInterval(() => {
-    fetch(window.location.href, { headers: { "X-Requested-With": "XMLHttpRequest" } })
-      .then(res => res.text())
-      .then(html => {
-        // Extract the chat list part from the response
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        const newList = doc.querySelector(".list-group");
-        const oldList = document.querySelector(".list-group");
-        if (newList && oldList) {
-          oldList.innerHTML = newList.innerHTML;
-        }
-      })
-      .catch(err => console.error("Chat list refresh failed:", err));
-  }, 5000); // every 5s – adjust as needed
-
-  // --- SEARCH filter ---
-  document.getElementById('search-input').addEventListener('input', function() {
-    const query = this.value.toLowerCase();
-    document.querySelectorAll('.chat-item').forEach(item => {
-      const name = item.querySelector('.chat-name').textContent.toLowerCase();
-      item.style.display = name.includes(query) ? '' : 'none';
-    });
-  });
-</script>
 
 {% endblock %}

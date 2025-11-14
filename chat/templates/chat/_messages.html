@@ -1,7 +1,8 @@
 {% load static %}
+
 <div class="chat-messages">
   {% for m in messages %}
-    <!-- Date Separator -->
+
     {% ifchanged m.timestamp.date %}
       <div class="date-separator">
         <span>
@@ -15,13 +16,14 @@
         </span>
       </div>
     {% endifchanged %}
-    
+
     {% if m.is_deleted %}
       <div class="msg-row {% if m.sender == user %}right{% else %}left{% endif %}">
         <div class="msg-bubble deleted">
           <em>This message was deleted</em>
         </div>
       </div>
+
     {% else %}
       <div class="msg-row {% if m.sender == user %}right{% else %}left{% endif %}">
         <div class="msg-bubble {% if m.sender == user %}me{% else %}them{% endif %}"
@@ -31,32 +33,6 @@
         </div>
       </div>
     {% endif %}
+
   {% endfor %}
 </div>
-
-<style>
-.chat-messages { width: 100%; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
-.msg-row { display: flex; }
-.msg-row.left { justify-content: flex-start; }
-.msg-row.right { justify-content: flex-end; }
-.msg-bubble { max-width: 75%; padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; position: relative; }
-.msg-bubble.me { background: #1e1e2f; color: white; border-bottom-right-radius: 4px; }
-.msg-bubble.them { background: #e9ecef; color: #212529; border-bottom-left-radius: 4px; }
-.msg-time { font-size: 0.7rem; margin-top: 4px; opacity: 0.7; text-align: right; }
-.msg-bubble.deleted { background: #f0f0f0; color: #888; font-style: italic; font-size: 0.85rem; padding: 8px 12px; }
-
-/* Date Separator Styles */
-.date-separator {
-  text-align: center;
-  margin: 15px 0;
-  position: relative;
-}
-.date-separator span {
-  background: #f8f9fa;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  color: #6c757d;
-  border: 1px solid #dee2e6;
-}
-</style>
