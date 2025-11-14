@@ -1,6 +1,21 @@
 {% load static %}
 <div class="chat-messages">
   {% for m in messages %}
+    <!-- Date Separator -->
+    {% ifchanged m.timestamp.date %}
+      <div class="date-separator">
+        <span>
+          {% if m.timestamp.date == today %}
+            Today
+          {% elif m.timestamp.date == yesterday %}
+            Yesterday
+          {% else %}
+            {{ m.timestamp|date:"M j, Y" }}
+          {% endif %}
+        </span>
+      </div>
+    {% endifchanged %}
+    
     {% if m.is_deleted %}
       <div class="msg-row {% if m.sender == user %}right{% else %}left{% endif %}">
         <div class="msg-bubble deleted">
@@ -29,4 +44,19 @@
 .msg-bubble.them { background: #e9ecef; color: #212529; border-bottom-left-radius: 4px; }
 .msg-time { font-size: 0.7rem; margin-top: 4px; opacity: 0.7; text-align: right; }
 .msg-bubble.deleted { background: #f0f0f0; color: #888; font-style: italic; font-size: 0.85rem; padding: 8px 12px; }
+
+/* Date Separator Styles */
+.date-separator {
+  text-align: center;
+  margin: 15px 0;
+  position: relative;
+}
+.date-separator span {
+  background: #f8f9fa;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+}
 </style>

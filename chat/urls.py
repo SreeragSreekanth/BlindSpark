@@ -11,6 +11,7 @@ urlpatterns = [
     path('message/<int:message_id>/delete/', views.delete_message, name='delete_message'),
     path('<int:match_id>/reveal/request/', views.request_reveal, name='request_reveal'),
     path('<int:match_id>/reveal/accept/', views.accept_reveal, name='accept_reveal'),
+    path('unread_count_api/', views.unread_count_api, name='unread_count_api'),
 
 
 ]

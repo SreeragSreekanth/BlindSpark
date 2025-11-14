@@ -79,7 +79,32 @@
 </style>
 
 <script>
-  // SEARCH
+  // --- Force reload if user navigates back from a chatroom ---
+  window.addEventListener("pageshow", function (event) {
+    const navType = performance.getEntriesByType("navigation")[0]?.type;
+    if (event.persisted || navType === "back_forward") {
+      window.location.reload();
+    }
+  });
+
+  // --- Auto-refresh every few seconds to get new chats/unreads ---
+  setInterval(() => {
+    fetch(window.location.href, { headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then(res => res.text())
+      .then(html => {
+        // Extract the chat list part from the response
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newList = doc.querySelector(".list-group");
+        const oldList = document.querySelector(".list-group");
+        if (newList && oldList) {
+          oldList.innerHTML = newList.innerHTML;
+        }
+      })
+      .catch(err => console.error("Chat list refresh failed:", err));
+  }, 5000); // every 5s – adjust as needed
+
+  // --- SEARCH filter ---
   document.getElementById('search-input').addEventListener('input', function() {
     const query = this.value.toLowerCase();
     document.querySelectorAll('.chat-item').forEach(item => {
@@ -88,4 +113,5 @@
     });
   });
 </script>
+
 {% endblock %}

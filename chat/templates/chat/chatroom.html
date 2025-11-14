@@ -23,7 +23,7 @@
           <span class="online-dot ms-2"></span>
       {% endif %} -->
     
-      <!-- REVEAL BUTTONS — ONLY THIS PART CHANGED -->
+      <!-- REVEAL BUTTONS -->
       <div id="reveal-controls" class="ms-auto">
         {% if not match.is_friend %}
           {% if reveal_requested %}
@@ -56,7 +56,7 @@
           <button class="btn btn-dark" type="submit">Send</button>
         </div>
       </form>
-      <div id="typing" class="text-success small mt-2" style="display:none;">Typing...</div>
+      <!-- <div id="typing" class="text-success small mt-2" style="display:none;">Typing...</div> -->
     </div>
   </div>
 
@@ -70,13 +70,28 @@
   .blur-photo { filter: blur(8px); transition: filter 0.3s ease; }
   .online-dot { display: inline-block; width: 8px; height: 8px; background: #4cd964; border-radius: 50%; box-shadow: 0 0 4px #4cd964; }
   #delete-popup { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  
+  /* Date Separator Styles */
+  .date-separator {
+    text-align: center;
+    margin: 15px 0;
+    position: relative;
+  }
+  .date-separator span {
+    background: #f8f9fa;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+  }
 </style>
 
 <script>
   const chatBox = document.getElementById('chat-box');
   const form = document.getElementById('chat-form');
   const input = document.getElementById('msg-input');
-  const typing = document.getElementById('typing');
+  // const typing = document.getElementById('typing');
   const popup = document.getElementById('delete-popup');
   
   let currentMsgId = null;
@@ -109,8 +124,8 @@
           // First load → scroll to latest
           scrollToBottom();
         } else if (lastMessageCount > oldMessageCount) {
-          // New messages arrived
-          scrollToBottomIfNearBottom();
+          // New messages arrived - ALWAYS SCROLL TO BOTTOM
+          scrollToBottom();
         }
       });
   }
@@ -187,20 +202,8 @@
       fetchMessages();
     });
   });
-  
-  // Typing indicator
-  let typingTimer;
-  input.addEventListener('input', () => {
-    if (input.value.trim()) {
-      typing.style.display = 'block';
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(() => typing.style.display = 'none', 1000);
-    } else {
-      typing.style.display = 'none';
-    }
-  });
 
-  // ——— REVEAL BUTTONS — ONLY THIS PART ADDED ———
+  // ——— REVEAL BUTTONS ———
   document.getElementById('request-btn')?.addEventListener('click', () => {
     fetch("{% url 'chat:request_reveal' match.id %}", {
       method: 'POST',
@@ -225,7 +228,6 @@
       }
     });
   });
-  // ——— END REVEAL ———
 </script>
   
 {% endblock %}

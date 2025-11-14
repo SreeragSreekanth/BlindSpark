@@ -12,6 +12,7 @@ from users.models import User
 from match.models import Match  # <-- import Match from your match app
 from .models import ChatRoom, Message,RevealRequest  # <-- import Message as well
 from django.db import models
+from django.db.models import Q
 from django.views.decorators.http import require_POST
 
 # Create your views here.
@@ -44,19 +45,20 @@ def chatroom(request, match_id):
         requester=request.user
     ).exists()
 
-    # Photo visibility
-    can_see_photo = match.is_friend
-    # ------------------------------------------
+    # Add today and yesterday for date separators
+    from datetime import date, timedelta
+    today = date.today()
+    yesterday = today - timedelta(days=1)
 
     return render(request, 'chat/chatroom.html', {
         'chatroom': chatroom,
         'match': match,
         'other_user': other_user,
-        'can_see_photo': can_see_photo,
-        'reveal_request': reveal_request,     # They requested
+        'reveal_request': reveal_request,
         'reveal_requested': reveal_requested,
+        'today': today,
+        'yesterday': yesterday,
     })
-
 
 
 @login_required
@@ -66,9 +68,32 @@ def fetch_messages(request, chat_id):
     if request.user not in (chat.match.user_a, chat.match.user_b):
         return HttpResponseForbidden()
 
+    other_user = chat.match.user_b if request.user == chat.match.user_a else chat.match.user_a
+
+    # ✅ Mark new messages from the other user as read
+    Message.objects.filter(
+        chat=chat,
+        sender=other_user,
+        is_read=False
+    ).update(is_read=True)
+
+    # Add today and yesterday for date separators
+    from datetime import date, timedelta
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+
     msgs = chat.messages.select_related('sender')
-    html = render(request, 'chat/_messages.html', {'messages': msgs}).content.decode()
-    return JsonResponse({'html': html})
+    html = render(request, 'chat/_messages.html', {
+        'messages': msgs,
+        'user': request.user,
+        'today': today,
+        'yesterday': yesterday
+    }).content.decode()
+
+    return JsonResponse({
+        'html': html,
+        'messages_count': msgs.count(),
+    })
 
 
 
@@ -167,3 +192,19 @@ def accept_reveal(request, match_id):
 
     RevealRequest.objects.filter(match=match, requester=other_user).delete()
     return JsonResponse({'accepted': True, 'unblurred': True})
+
+
+@login_required
+def unread_count_api(request):
+    total_unread = 0
+    matches = Match.objects.filter(is_active=True).filter(
+        Q(user_a=request.user) | Q(user_b=request.user)
+    )
+    for m in matches:
+        room = ChatRoom.objects.filter(match=m).first()
+        if room:
+            other = m.user_b if m.user_a == request.user else m.user_a
+            unread = Message.objects.filter(chat=room, sender=other, is_read=False).count()
+            total_unread += unread
+
+    return JsonResponse({"unread_count": total_unread})

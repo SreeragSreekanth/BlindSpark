@@ -1,56 +1,32 @@
 <nav class="navbar">
-    <div class="nav-container">
-      <a href="{% url 'home' %}" class="brand">BlindSpark 💫</a>
-  
-      <ul class="nav-links">
-        {% if user.is_authenticated %}
-          <li><a href="{% url 'users:profile' %}">Profile</a></li>
-          <li><a href="{% url 'matches:discover' %}">Discover</a></li>
-          <li class="position-relative">
-            <a href="{% url 'chat:chat_list' %}">Chat</a>
-            {% if total_unread > 0 %}
-              <span class="badge-unread">{{ total_unread }}</span>
-            {% endif %}
-          </li>
-          <li><a href="{% url 'users:logout' %}">Logout</a></li>
-        {% else %}
-          <li><a href="{% url 'users:register' %}">Sign Up</a></li>
-          <li><a href="{% url 'users:login' %}">Login</a></li>
-        {% endif %}
-      </ul>
-    </div>
-  </nav>
-  
-  <style>
-    .navbar {
-      background: #1e1e2f;
-      padding: 10px 20px;
-    }
-    .nav-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .brand {
-      color: #ffb300;
-      font-weight: bold;
-      text-decoration: none;
-      font-size: 1.3rem;
-    }
-    .nav-links {
-      list-style: none;
-      display: flex;
-      gap: 15px;
-    }
-    .nav-links a {
-      color: white;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .nav-links a:hover {
-      color: #ffb300;
-    }
-    .badge-unread {
+  <div class="nav-container">
+    <a href="{% url 'home' %}" class="brand">BlindSpark 💫</a>
+
+    <ul class="nav-links">
+      {% if user.is_authenticated %}
+        <li><a href="{% url 'users:profile' %}">Profile</a></li>
+        <li><a href="{% url 'matches:discover' %}">Discover</a></li>
+        <li class="position-relative">
+          <a href="{% url 'chat:chat_list' %}">Chat</a>
+          <span class="badge-unread" id="nav-unread-badge" style="display:none">0</span>
+        </li>
+        <li><a href="{% url 'users:logout' %}">Logout</a></li>
+      {% else %}
+        <li><a href="{% url 'users:register' %}">Sign Up</a></li>
+        <li><a href="{% url 'users:login' %}">Login</a></li>
+      {% endif %}
+    </ul>
+  </div>
+</nav>
+
+<style>
+  .navbar { background: #1e1e2f; padding: 10px 20px; }
+  .nav-container { display: flex; justify-content: space-between; align-items: center; }
+  .brand { color: #ffb300; font-weight: bold; text-decoration: none; font-size: 1.3rem; }
+  .nav-links { list-style: none; display: flex; gap: 15px; }
+  .nav-links a { color: white; text-decoration: none; font-weight: 500; }
+  .nav-links a:hover { color: #ffb300; }
+  .badge-unread {
     position: absolute;
     top: -8px;
     right: -12px;
@@ -67,5 +43,30 @@
     padding: 0 5px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.4);
   }
-  </style>
-  
+</style>
+
+<script>
+  async function fetchUnreadCount() {
+    try {
+      const res = await fetch("{% url 'chat:unread_count_api' %}");
+      if (!res.ok) throw new Error('Network response was not ok');
+      const data = await res.json();
+      const badge = document.getElementById('nav-unread-badge');
+      if (data.unread_count > 0) {
+        badge.textContent = data.unread_count;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  }
+
+  // Poll every 5 seconds for live updates
+  fetchUnreadCount();
+  setInterval(fetchUnreadCount, 5000);
+
+  // Also refresh on page show (back navigation)
+  window.addEventListener('pageshow', () => fetchUnreadCount());
+</script>
